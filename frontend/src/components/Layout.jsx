@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; 
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 export default function Layout({ children }) {
   const [time, setTime] = useState(new Date());
@@ -11,11 +13,16 @@ export default function Layout({ children }) {
     return () => clearInterval(timer);
   }, []);
 
-  // 🛠️ The Logout Function for the Blue Circle
-  const handleLogout = () => {
-    // In a real app, you'd clear the auth token here. For the demo, just send them to login!
-    localStorage.removeItem('token'); 
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('token'); 
+      localStorage.removeItem('userEmail'); 
+      localStorage.removeItem('aera_healthCondition'); 
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
   };
 
   return (
@@ -44,7 +51,7 @@ export default function Layout({ children }) {
             </div>
           </button>
           
-          {/* 🛠️ Impact Vault Tab */}
+          {/* Impact Vault Tab */}
           <button 
             onClick={() => navigate('/vault')}
             className="relative group w-full flex justify-center cursor-pointer"
@@ -56,15 +63,25 @@ export default function Layout({ children }) {
             </div>
           </button>
 
-          {/* Settings Tab (Still locked for demo) */}
+          {/* 🛠️ NEW: History Ledger Tab */}
+          <button 
+            onClick={() => navigate('/history')}
+            className="relative group w-full flex justify-center cursor-pointer"
+            title="Commute Ledger"
+          >
+            {location.pathname === '/history' && <div className="absolute inset-y-0 left-0 w-1 bg-blue-500 rounded-r-full"></div>}
+            <div className={`p-3 rounded-xl transition-all ${location.pathname === '/history' ? 'bg-blue-500/20 text-blue-400' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          </button>
+
+          {/* Settings Tab */}
           <button 
             onClick={() => navigate('/settings')}
             className="relative group w-full flex justify-center cursor-pointer"
             title="Settings"
           >
-            {/* Add the blue indicator line if active */}
             {location.pathname === '/settings' && <div className="absolute inset-y-0 left-0 w-1 bg-blue-500 rounded-r-full"></div>}
-            
             <div className={`p-3 rounded-xl transition-all ${location.pathname === '/settings' ? 'bg-blue-500/20 text-blue-400' : 'text-gray-500 hover:text-white hover:bg-gray-800'}`}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
             </div>
@@ -90,7 +107,6 @@ export default function Layout({ children }) {
               {time.toLocaleTimeString()}
             </div>
             
-            {/* 🛠️ PROFILE AVATAR / LOGOUT BUTTON */}
             <div 
               onClick={handleLogout}
               title="Click to Logout"

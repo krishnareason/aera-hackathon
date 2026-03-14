@@ -5,21 +5,24 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout'; // 🛠️ Imported the new Command Shell
+import Layout from './components/Layout'; 
 import ImpactVault from './components/ImpactVault';
 import Settings from './components/Settings';
+import History from './components/History'; // 🛠️ History Imported
 
-// 🛠️ We create a helper component so we can use the 'useLocation' hook
 function AppContent() {
   const location = useLocation();
   
-  // Check if we are on the dashboard or any future internal pages
-  const isInternalApp = location.pathname.startsWith('/dashboard');
+  // 🛠️ Checks all internal paths to hide the public Navbar
+  const isInternalApp = 
+    location.pathname.startsWith('/dashboard') || 
+    location.pathname.startsWith('/vault') || 
+    location.pathname.startsWith('/history') ||
+    location.pathname.startsWith('/settings');
 
   return (
     <div className="w-full min-h-screen font-sans text-gray-900 flex flex-col">
       
-      {/* 🛠️ Only show the basic Navbar on Landing, Login, and Register */}
       {!isInternalApp && <Navbar />}
       
       <Routes>
@@ -27,30 +30,29 @@ function AppContent() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
         
-        {/* Protected Routes */}
+        {/* Protected Routes (Wrapped in the Sidebar Layout) */}
         <Route 
           path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              {/* 🛠️ Wrap ONLY the Dashboard in the new Layout Shell */}
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          } 
+          element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} 
         />
+        
+        {/* 🛠️ HERE IS YOUR VAULT ROUTE RESTORED */}
         <Route 
-            path="/vault" 
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <ImpactVault />
-                </Layout>
-              </ProtectedRoute>
-            } 
-          />
+          path="/vault" 
+          element={<ProtectedRoute><Layout><ImpactVault /></Layout></ProtectedRoute>} 
+        />
+        
+        {/* 🛠️ THE NEW HISTORY ROUTE */}
+        <Route 
+          path="/history" 
+          element={<ProtectedRoute><Layout><History /></Layout></ProtectedRoute>} 
+        />
+
+        <Route 
+          path="/settings" 
+          element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} 
+        />
       </Routes>
     </div>
   );

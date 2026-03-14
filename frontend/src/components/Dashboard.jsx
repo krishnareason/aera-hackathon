@@ -7,7 +7,7 @@ export default function Dashboard() {
   const [startLoc, setStartLoc] = useState("Ruby, Kolkata");
   const [endLoc, setEndLoc] = useState("Salt Lake, Kolkata");
   const [isRouting, setIsRouting] = useState(false);
-  // 🚀 Get User's Name from Email
+  
   const userEmail = localStorage.getItem('userEmail') || 'guest@aera.com';
   const userName = userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
 
@@ -20,11 +20,9 @@ export default function Dashboard() {
   const [aiAlert, setAiAlert] = useState(null); 
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // 🚀 Gamification & Prediction States
   const [surveyAnswers, setSurveyAnswers] = useState({ transit: false, carpool: false });
   const [isRegularCommute, setIsRegularCommute] = useState(false);
 
-  // Stop audio if user clicks a different route
   useEffect(() => {
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
@@ -72,7 +70,6 @@ export default function Dashboard() {
         if (alt1Res?.data?.routes?.[0]) rawRoutes.push({ r: alt1Res.data.routes[0], type: "Eco-Bypass Alternative 1", isFastest: false });
         if (alt2Res?.data?.routes?.[0]) rawRoutes.push({ r: alt2Res.data.routes[0], type: "Eco-Bypass Alternative 2", isFastest: false });
 
-        // 🛠️ Get Health Condition from Settings
         const userHealth = localStorage.getItem('aera_healthCondition') || 'None';
 
         const analyzedRoutes = [];
@@ -83,7 +80,6 @@ export default function Dashboard() {
             const time = Math.round(r.duration / 60);
             const dist = (r.distance / 1000).toFixed(1);
 
-            // 🛠️ Pass health_condition to Backend
             const rData = await axios.get(`http://127.0.0.1:8000/analyze-route?lat=${mid[0]}&lng=${mid[1]}&duration_mins=${time}&distance_km=${dist}&route_type=${i}&start_name=${startLoc}&end_name=${endLoc}&health_condition=${userHealth}`);
             
             if (rData.data.status === "error") continue; 
@@ -110,7 +106,6 @@ export default function Dashboard() {
 
   const activeRoute = routes[selectedIndex];
 
-  // 🎙️ Web Speech API
   const toggleAudioBriefing = () => {
     if (isSpeaking) {
       window.speechSynthesis.cancel();
@@ -129,21 +124,39 @@ export default function Dashboard() {
     }
   };
 
-  // 🚀 GAMIFICATION LOGIC
+  // 🛠️ THE UPDATED LOGGING SYSTEM
   const logRouteTaken = () => {
     if (!activeRoute || !activeRoute.data) return;
+    
+    // 1. Update Vault Aggregates
     let currentLife = parseFloat(localStorage.getItem('aera_lifeSaved') || 0);
     let currentRoutes = parseInt(localStorage.getItem('aera_routesTaken') || 0);
     let currentToxic = parseInt(localStorage.getItem('aera_toxicDodged') || 0);
-
     let newLifeSaved = activeRoute.data.health?.saved_life_mins || 0;
     localStorage.setItem('aera_lifeSaved', currentLife + parseFloat(newLifeSaved));
     localStorage.setItem('aera_routesTaken', currentRoutes + 1);
-
     if (!activeRoute.isFastest) {
       localStorage.setItem('aera_toxicDodged', currentToxic + 1);
     }
-    alert(`Route Logged! +${newLifeSaved} mins of life saved added to your Vault!`);
+
+    // 2. Add to Chronological History Ledger
+    const tripLog = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      start: startLoc,
+      end: endLoc,
+      type: activeRoute.originalName,
+      isFastest: activeRoute.isFastest,
+      aqi: activeRoute.data.aqi,
+      lifeSaved: newLifeSaved,
+      cigsDodged: activeRoute.data.health?.saved_life_mins ? (activeRoute.data.health.saved_life_mins / 11).toFixed(1) : 0
+    };
+    
+    const existingHistory = JSON.parse(localStorage.getItem('aera_tripHistory') || '[]');
+    localStorage.setItem('aera_tripHistory', JSON.stringify([tripLog, ...existingHistory]));
+
+    alert(`Trip Logged! +${newLifeSaved} mins of life saved added to your Vault & History!`);
   };
 
   const handleSurveyAnswer = (type) => {
@@ -166,7 +179,6 @@ export default function Dashboard() {
 
       <div className="w-full max-w-[1400px] mb-4 flex justify-between items-end">
         <div>
-          {/* 🛠️ PERSONALIZED GREETING */}
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">
             Welcome back, <span className="text-blue-600">{userName}</span>
           </h1>
@@ -255,7 +267,6 @@ export default function Dashboard() {
                   {surveyAnswers.carpool ? '✓ Logged Carpool' : '🚙 Carpooling Today?'}
                 </button>
                 
-                {/* 🛠️ PREDICTOR TOGGLE */}
                 {/* 🛠️ PREDICTOR TOGGLE: Yes/No Buttons */}
                 <div className="border-l border-gray-300 pl-4 ml-2 flex flex-col items-start gap-1">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Is this a regular commute?</span>
@@ -314,7 +325,6 @@ export default function Dashboard() {
               <div className="shrink-0 bg-purple-50 border border-purple-200 p-5 rounded-2xl shadow-xl animate-fade-in mt-2">
                 <h3 className="font-bold text-purple-900 mb-3 flex items-center gap-2"><span>🔮</span> 1-YEAR AI FORECAST</h3>
                 
-                {/* 🤖 The personalized text generated by Gemini */}
                 <div className="bg-white p-3 rounded-xl border border-purple-100 shadow-sm mb-4">
                   <p className="text-sm text-purple-800 font-medium leading-relaxed italic">
                     "{activeRoute.data.long_term_prediction}"
