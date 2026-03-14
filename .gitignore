@@ -13,4 +13,4 @@ backend/.env
 # General OS files
 .DS_Store
 Thumbs.db
-backend/.env
+.env
