@@ -6,7 +6,7 @@ export default function Landing() {
       <div className="max-w-4xl mx-auto text-center">
         {/* Hackathon Track Tag */}
         <div className="inline-block px-4 py-1 mb-6 rounded-full bg-green-100 text-green-700 font-semibold text-sm tracking-wide border border-green-200">
-          🌍 Planet Protectors Track
+          🌍 Planet Protectors
         </div>
         
         {/* Main Headline */}

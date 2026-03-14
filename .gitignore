@@ -3,6 +3,7 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env
 firebase.js
+frontend/package-lock.json
 
 # Backend
 backend/venv/
@@ -12,3 +13,4 @@ backend/.env
 # General OS files
 .DS_Store
 Thumbs.db
+backend/.env

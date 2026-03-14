@@ -13,7 +13,9 @@ export default function Login() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard'); // Go to dashboard on success
+      // 🛠️ NEW: Save the email so the Impact Vault knows who is logged in!
+      localStorage.setItem('userEmail', email); 
+      navigate('/dashboard'); 
     } catch (err) {
       setError("Invalid email or password.");
     }
