@@ -46,8 +46,9 @@ export default function Dashboard() {
         setStartCoords(start);
         setEndCoords(end);
 
-        const baseUrl = `http://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-        const baseRes = await axios.get(baseUrl);
+        // 🛠️ SECURE HTTPS OSRM LINKS
+        const baseUrl = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+        const baseRes = await axios.get(baseUrl); // <-- This is the line that went missing!
         const baseRoute = baseRes.data.routes[0];
 
         const basePath = baseRoute.geometry.coordinates;
@@ -56,8 +57,8 @@ export default function Dashboard() {
         const mid1 = [baseMid[0] + 0.025, baseMid[1] + 0.025]; 
         const mid2 = [baseMid[0] - 0.025, baseMid[1] - 0.025]; 
 
-        const alt1Url = `http://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${mid1[0]},${mid1[1]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-        const alt2Url = `http://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${mid2[0]},${mid2[1]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+        const alt1Url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${mid1[0]},${mid1[1]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+        const alt2Url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${mid2[0]},${mid2[1]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
 
         const [alt1Res, alt2Res] = await Promise.all([
             axios.get(alt1Url).catch(() => null),
@@ -76,11 +77,18 @@ export default function Dashboard() {
         for (let i = 0; i < rawRoutes.length; i++) {
             const { r, type, isFastest } = rawRoutes[i];
             const path = r.geometry.coordinates.map(c => [c[1], c[0]]);
-            const mid = path[Math.floor(path.length / 2)];
+            
+            const startPt = path[0];
+            const midPt = path[Math.floor(path.length / 2)];
+            const endPt = path[path.length - 1];
+            
             const time = Math.round(r.duration / 60);
             const dist = (r.distance / 1000).toFixed(1);
 
-            const rData = await axios.get(`http://127.0.0.1:8000/analyze-route?lat=${mid[0]}&lng=${mid[1]}&duration_mins=${time}&distance_km=${dist}&route_type=${i}&start_name=${startLoc}&end_name=${endLoc}&health_condition=${userHealth}`);
+            // 🚀 LIVE RENDER BACKEND URL
+            const apiUrl = `https://aera-hackathon.onrender.com/analyze-route?start_lat=${startPt[0]}&start_lng=${startPt[1]}&mid_lat=${midPt[0]}&mid_lng=${midPt[1]}&end_lat=${endPt[0]}&end_lng=${endPt[1]}&duration_mins=${time}&distance_km=${dist}&route_type=${i}&start_name=${startLoc}&end_name=${endLoc}&health_condition=${userHealth}`;
+            
+            const rData = await axios.get(apiUrl);
             
             if (rData.data.status === "error") continue; 
 
@@ -124,11 +132,9 @@ export default function Dashboard() {
     }
   };
 
-  // 🛠️ THE UPDATED LOGGING SYSTEM
   const logRouteTaken = () => {
     if (!activeRoute || !activeRoute.data) return;
     
-    // 1. Update Vault Aggregates
     let currentLife = parseFloat(localStorage.getItem('aera_lifeSaved') || 0);
     let currentRoutes = parseInt(localStorage.getItem('aera_routesTaken') || 0);
     let currentToxic = parseInt(localStorage.getItem('aera_toxicDodged') || 0);
@@ -139,7 +145,6 @@ export default function Dashboard() {
       localStorage.setItem('aera_toxicDodged', currentToxic + 1);
     }
 
-    // 2. Add to Chronological History Ledger
     const tripLog = {
       id: Date.now(),
       date: new Date().toLocaleDateString(),
@@ -198,7 +203,6 @@ export default function Dashboard() {
 
       <div className="w-full max-w-[1400px] relative z-0 flex gap-4">
         
-        {/* LEFT PANEL */}
         <div className="w-[350px] flex flex-col gap-4 z-[1000]">
           <div className="bg-white p-5 rounded-2xl shadow-xl border border-gray-200 shrink-0">
             <input type="text" value={startLoc} onChange={(e) => setStartLoc(e.target.value)} className="w-full mb-2 p-2 text-sm border rounded" placeholder="Start Location" />
@@ -228,7 +232,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* CENTER MAP & INTERACTION AREA */}
         <div className="flex-1 flex flex-col gap-4 relative z-0">
           <MapCanvas 
             routes={routes} 
@@ -240,7 +243,6 @@ export default function Dashboard() {
             endName={endLoc}     
           />
 
-          {/* 🚀 ECO-SURVEY UI */}
           {activeRoute && (
             <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-200 shrink-0 animate-fade-in flex flex-col xl:flex-row items-center justify-between gap-4 z-[1000]">
               <div className="flex items-center gap-3">
@@ -267,7 +269,6 @@ export default function Dashboard() {
                   {surveyAnswers.carpool ? '✓ Logged Carpool' : '🚙 Carpooling Today?'}
                 </button>
                 
-                {/* 🛠️ PREDICTOR TOGGLE: Yes/No Buttons */}
                 <div className="border-l border-gray-300 pl-4 ml-2 flex flex-col items-start gap-1">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Is this a regular commute?</span>
                   <div className="flex gap-2">
@@ -290,7 +291,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* RIGHT PANEL: Drama & Data */}
         {activeRoute && activeRoute.data && (
           <div className="w-[340px] z-[1000] flex flex-col gap-4 overflow-y-auto h-[85vh] pb-32 pr-2 custom-scrollbar">
             
@@ -298,7 +298,7 @@ export default function Dashboard() {
               href={`https://www.google.com/maps/dir/?api=1&origin=${startCoords[0]},${startCoords[1]}&destination=${endCoords[0]},${endCoords[1]}&waypoints=${activeRoute.path[Math.floor(activeRoute.path.length / 2)][0]},${activeRoute.path[Math.floor(activeRoute.path.length / 2)][1]}`}
               target="_blank" 
               rel="noopener noreferrer"
-              onClick={logRouteTaken} // GAMIFICATION HOOK
+              onClick={logRouteTaken} 
               className="shrink-0 w-full bg-gray-900 text-white font-bold py-3 px-4 rounded-2xl shadow-xl flex justify-center items-center gap-2 hover:bg-black transition-transform transform hover:scale-105"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
@@ -309,7 +309,6 @@ export default function Dashboard() {
               <PollutionChart activeRouteData={activeRoute.data} />
             </div>
 
-            {/* 🚬 CIGARETTE EQUIVALENT CARD */}
             {activeRoute.data.health?.cigs_per_hour !== undefined && (
               <div className="shrink-0 bg-slate-900 text-white p-4 rounded-2xl shadow-xl flex items-center justify-between">
                 <div>
@@ -320,7 +319,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* 🔮 LONG TERM IMPACT PREDICTOR */}
             {isRegularCommute && activeRoute.data && (
               <div className="shrink-0 bg-purple-50 border border-purple-200 p-5 rounded-2xl shadow-xl animate-fade-in mt-2">
                 <h3 className="font-bold text-purple-900 mb-3 flex items-center gap-2"><span>🔮</span> 1-YEAR AI FORECAST</h3>
@@ -351,7 +349,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* AI TAGS */}
             {activeRoute.data.micro_factors && activeRoute.data.micro_factors.length > 0 && (
               <div className="shrink-0 flex flex-col gap-2 animate-fade-in">
                 {activeRoute.data.micro_factors.map((factor, idx) => {
@@ -364,7 +361,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* AI TRANSIT */}
             {activeRoute.data.transit_suggestion && (
               <div className="shrink-0 bg-[#064e3b] border border-[#10b981] text-emerald-50 p-4 rounded-2xl shadow-xl flex flex-col gap-3 animate-fade-in mt-2 relative overflow-hidden">
                 <div className="flex items-center justify-between">
@@ -384,7 +380,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* MEDICAL ALERT */}
             {activeRoute.data.medical_alert && (
               <div className="shrink-0 bg-red-50 p-5 rounded-2xl shadow-xl border border-red-200 animate-fade-in mt-2">
                 <h3 className="font-bold text-red-700 mb-2 flex items-center gap-2"><span>🚨</span> TOXIC CORRIDOR</h3>
@@ -396,7 +391,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* REWARD MSG */}
             {activeRoute.data.reward_msg && (
               <div className="shrink-0 bg-green-50 p-5 rounded-2xl shadow-xl border border-green-200 animate-fade-in mt-2">
                 <h3 className="font-bold text-green-700 mb-2 flex items-center gap-2"><span>🛡️</span> OPTIMAL HEALTH</h3>
