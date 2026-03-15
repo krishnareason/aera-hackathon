@@ -48,7 +48,7 @@ export default function Dashboard() {
 
         // 🛠️ SECURE HTTPS OSRM LINKS
         const baseUrl = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-        const baseRes = await axios.get(baseUrl); // <-- This is the line that went missing!
+        const baseRes = await axios.get(baseUrl); 
         const baseRoute = baseRes.data.routes[0];
 
         const basePath = baseRoute.geometry.coordinates;
@@ -85,8 +85,8 @@ export default function Dashboard() {
             const time = Math.round(r.duration / 60);
             const dist = (r.distance / 1000).toFixed(1);
 
-            // 🚀 LIVE RENDER BACKEND URL
-            const apiUrl = `https://aera-hackathon.onrender.com/analyze-route?start_lat=${startPt[0]}&start_lng=${startPt[1]}&mid_lat=${midPt[0]}&mid_lng=${midPt[1]}&end_lat=${endPt[0]}&end_lng=${endPt[1]}&duration_mins=${time}&distance_km=${dist}&route_type=${i}&start_name=${startLoc}&end_name=${endLoc}&health_condition=${userHealth}`;
+            // 🚀 LIVE RENDER BACKEND URL (Safely Encoded to fix 422 Error)
+            const apiUrl = `https://aera-hackathon.onrender.com/analyze-route?start_lat=${startPt[0]}&start_lng=${startPt[1]}&mid_lat=${midPt[0]}&mid_lng=${midPt[1]}&end_lat=${endPt[0]}&end_lng=${endPt[1]}&duration_mins=${time}&distance_km=${dist}&route_type=${i}&start_name=${encodeURIComponent(startLoc)}&end_name=${encodeURIComponent(endLoc)}&health_condition=${encodeURIComponent(userHealth)}`;
             
             const rData = await axios.get(apiUrl);
             
